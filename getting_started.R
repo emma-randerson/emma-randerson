@@ -22,16 +22,26 @@ devtools::install_github('PeakBI/S3R', auth_token = '<personal_access_token>')
 # 5. Click on the newstarter folder
 # 6. Look in the uploads folder
 # 7. Load the data from airlines into R
-airlines <- S3R::s3.read_using(FUN = read.csv, bucket = 'kilimanjaro-prod-datalake', object_path = 'newstarter/uploads/airlines/1581525103214_Peak_airlines.csv')
+library(S3R); library(odbc);
 
-# 8. Load weather, planes, flights, airports data into R as well. Clicking on the file and using 
+flights <- S3R::s3.read_using(FUN = read.csv,
+                              bucket = 'kilimanjaro-prod-datalake',
+                              object_path = 'newstarter/uploads/flights/1581525083144_Peak_flights.csv')
+
+# 8. Load weather, planes, airlines, airports data into R as well. Clicking on the file and using 
 # "Copy Path" can help with long paths.
 
-# copy data from S3 to Redshift
+# 9. Copy data from S3 to Redshift
+# S3 is used for short term data storage, but we often move data to Redshift if it is large
+# (making it difficult to read in all at once) or if we plan to use it in production / on a
+# long term basis. You can run the COPY command to move S3 files into Redshift.
 
-# setup redshift connection
+# 10. Setup Redshift connection. Within workspaces, you can connect to Redshift using the
+# odbc package. You can use the 'Connections' tab to the right.
+# New connection > newstarter-prod < Ok or connect directly using the code below
+con <- dbConnect(odbc::odbc(), "newstarter-prod", timeout = 10)
 
-# query data from redshift
+# 11. Query data from Redshift. You can query the database in Redshift.
 
 # create a peak themed plot
 
