@@ -22,14 +22,25 @@ devtools::install_github('PeakBI/S3R', auth_token = '<personal_access_token>')
 # * Click on the newstarter folder
 # * Look in the uploads folder
 # * Load the data from airlines into R
-library(S3R); library(odbc);
+library(S3R); library(odbc); library(readr)
 
-flights <- S3R::s3.read_using(FUN = read.csv,
+flights <- S3R::s3.read_using(FUN = readr::read_csv,
                               bucket = 'kilimanjaro-prod-datalake',
                               object_path = 'newstarter/uploads/flights/1581525083144_Peak_flights.csv')
 
 # * Load weather, planes, airlines, airports data into R as well. Clicking on the file and using 
 # "Copy Path" can help with long paths.
+
+
+#### Write data up to S3. 
+# Data Scientists are only allowed to write into the datascience subfolder for each customer
+# within S3. We can write to S3 in a really similar way to how we read from S3.
+S3R::s3.write_using(flights, 
+                    FUN = readr::write_csv,
+                    bucket = 'kilimanjaro-prod-datalake',
+                    object_path = 'newstarter/datascience/file_upload/flights.csv')
+
+# Write weather, planes, airlines and airports data up to S3 as well.
 
 
 # * Setup Redshift connection. Within workspaces, you can connect to Redshift using the
@@ -49,7 +60,7 @@ con <- DBI::dbConnect(odbc::odbc(), "newstarter-prod", timeout = 10)
 # redshift database. We will copy over some of the raw flights data into the schema 'stage'. 
 # Create an empty table with the appropriate schema. You can find out about the types of the 
 # columns in the dataframe by running str(<dataframe>)
-DBI::dbSendQuery(con, "create table stage.flights (
+DBI::dbSendQuery(con, "create table if not exists sandpit.flights (
                        year int,
                        month int,
                        day int,
@@ -74,14 +85,12 @@ DBI::dbSendQuery(con, "create table stage.flights (
 # Use the redshift copy command to populate the table. More info on this command can be found at:
 # https://docs.aws.amazon.com/redshift/latest/dg/r_COPY.html.
 
-##############################################################################################
-#!! has not been tested as I (Sorcha) don't have permission to write to schema stage
-##############################################################################################
-
-DBI::dbSendQuery(con, "copy stage.flights
-                  from 's3://kilimanjaro-prod-datalake/newstarter/uploads/flights/1581525083144_Peak_flights.csv'
+DBI::dbSendQuery(con, "copy sandpit.flights
+                  from 's3://kilimanjaro-prod-datalake/newstarter/datascience/file_upload/flights.csv'
                   iam_role 'arn:aws:iam::794236216820:role/RedshiftS3Access'
                   delimiter ','
+                  NULL as 'NA'
+                  EMPTYASNULL
                   ignoreheader 1;")
 
 # Copy the rest of the files over to redshift using the same method.
@@ -94,15 +103,36 @@ library(dplyr); library(dbplyr); library(DBI)
 
 flights_redshift <-
   con %>%
-  tbl(in_schema('stage','flights'))
+  tbl(in_schema('sandpit','flights'))
 
-# Have a play around with the stored locally and called from redshift. 
+# Have a play around with the flights data which is stored locally and the flights_redshift data
+# which is pulled from redshift. E.g.
+
+monthly_distance <- 
+  flights %>%
+  group_by(year, month) %>%
+  summarise(total_dist = sum(distance))
+
+# We can have a look at this in an easier to read format by running
+
+monthly_distance %>% View()
+
+# If we try to do the same with flights_redshift it won't work as the data is still held in
+# redshift. To view it, we need to use collect():
+
+monthly_distance <-
+  flights_redshift %>%
+  group_by(year,month) %>%
+  summarise(ttotal_dist = sum(distance)) %>%
+  collect()
+
+monthly_distance %>% View()
 
 # Create a peak themed plot. When we generate plots for customers, we use the package peak-theme
 # to make the plots look consistent with our branding on the website and elsewhere.
 # If it's not already installed, install the peak-theme package from github. At the moment, we 
 # are working off a branch called v2-brand-updates (you may need to check with Sorcha/Amy/Jason 
-# if this is still the case)
+# if this is still the case). Remember to use collect() if you are trying to plot using flights_redshift
 devtools::install_github('PeakBI/peak-theme', auth_token = '<personal_access_token>', ref = 'v2-brand-updates')
 
 # Say we want to plot the distance travelled by each carrier
@@ -111,23 +141,13 @@ library(ggplot2); library(peaktheme)
 flights %>%
   group_by(carrier) %>%
   summarise(dist=sum(distance)) %>%
-  ggplot(aes(x = reorder(carrier,-dist), y = dist)) +
+  ggplot(aes(x = reorder(carrier,dist), y = dist)) +
   geom_col(fill = peaktheme:::peak_fa[1])+ 
   theme_peak() +
-  labs(x = 'Carrier', y = 'Distance travelled')
-
-# write to S3 using S3R. Data scientists are only allowed to write to the datascience folders
-# within their tenant on S3.
-S3R::s3.write_using(flights, 
-                    FUN = write.csv, 
-                    bucket = 'kilimanjaro-prod-datalake', 
-                    object = 'newstarter/datascience/flights_data.csv')
-
-
-
-# write to redshift directly
-
-
-
+  coord_flip() +
+  labs(x = 'Carrier', y = 'Distance travelled') +
+  geom_text(aes(label = paste0(round(dist/10^3,1),'k')), family = 'nhaasgrotesk55rg', size = 3, hjust=-0.1)+
+  scale_y_continuous(limits = c(0,100000000))
 
 # save in downloads section of AIS
+# We usually use a 
