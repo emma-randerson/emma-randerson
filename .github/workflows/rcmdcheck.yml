@@ -1,4 +1,4 @@
-name: R-CMD-check
+name: Build
 
 on:
   push:
@@ -7,6 +7,8 @@ on:
   pull_request:
     branches:
       - master
+
+name: R-CMD-check
 
 jobs:
   R-CMD-check:
@@ -17,10 +19,9 @@ jobs:
       - name: Install dependencies
         run: |
           install.packages(c("remotes", "rcmdcheck"))
-          setwd('rpackage')
-          remotes::install_deps(dependencies = TRUE)
+          remotes::install_deps(pkgdir = "rpackage", dependencies = TRUE)
         shell: Rscript {0}
       - name: Check
         run:
-          rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
+          rcmdcheck::rcmdcheck(path = "rpackage", args = "--no-manual", error_on = "error")
         shell: Rscript {0}
