@@ -14,6 +14,8 @@ top_brands <-
   filter(row_number() <= 10) %>%
   collect()
 
+colnames(transactions)
+
 orders <- transactions %>%
   filter(orderdate >= '2020-06-01') %>%
   filter(!nonretail, !bin_returned) %>%
@@ -32,11 +34,25 @@ orders <- transactions %>%
                               T ~ 'other')) %>%
   collect()
 
+orders <- transactions %>%
+  filter(orderdate >= '2020-06-01') %>%
+  filter(!nonretail, !bin_returned) %>%
+  group_by(salesordernumber) %>%
+  summarise(basketsize = sum(unitssold),
+            basketvalue = sum(grosssales),
+            discount = sql("sum(case when bin_discount then 1 else 0 end) > 0"),
+            division = sql("listagg(distinct(division),'_') within group (order by division)")) %>%
+  collect()
+
 ggplot(orders, aes(x = basketsize, y = basketvalue)) +
   geom_point(alpha = 0.1)
 
-model <- lm(basketvalue ~ basketsize + discount + clearance + brand + division, orders)
+
+# one-hot encoding for variables like division
+
+model <- lm(basketvalue ~ basketsize + discount + division, orders) #  + discount + clearance + brand + division
 summary(model)
+
 
 basketsize <- c(1,2,3)
 discount <- c('1','0','1')
