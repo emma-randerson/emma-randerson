@@ -1,0 +1,213 @@
+---
+title: "Peak x United Airlines"
+title2: "Example insight report"
+date: "`r format(Sys.Date(), '%e %B %Y')`"  
+purpose: | 
+  To demonstrate how to use an R Markdown document with the Airlines data set for new starters in the Data Science team.
+summary: |
+  To summarise:
+  
+  * R Markdown is a great way to turn code into PDFs!
+  * Make sure you make the most of functions in the peaktheme package as it formats charts in much fewer lines of code
+  * Ensure that the document you end up making is customer ready; check spelling and grammar, make sure no weird messages have been printed from the code, and make your charts look worthy of the marketing team
+output: 
+  peaktheme::insight_report_pdf
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+# Libraries
+library(S3R); library(dplyr); library(ggplot2); library(peaktheme);
+
+# This makes sure that the TeX Gyre Heros font is available for charts
+font_add("TeX Gyre Heros", regular = "/usr/share/texmf/fonts/opentype/public/tex-gyre/texgyreheros-regular.otf")
+
+# Read in data from S3
+flights <- S3R::s3.read_using(FUN = read.csv,
+                              bucket = 'kilimanjaro-prod-datalake',
+                              object_path = 'newstarter/uploads/flights/1581525083144_Peak_flights.csv')
+
+airports <- S3R::s3.read_using(FUN = read.csv,
+                              bucket = 'kilimanjaro-prod-datalake',
+                              object_path = 'newstarter/uploads/airports/1581525097375_Peak_airports.csv')
+
+airlines <- S3R::s3.read_using(FUN = read.csv,
+                               bucket = 'kilimanjaro-prod-datalake',
+                               object_path = 'newstarter/uploads/airlines/1581525103214_Peak_airlines.csv')
+
+planes <- S3R::s3.read_using(FUN = read.csv,
+                               bucket = 'kilimanjaro-prod-datalake',
+                               object_path = 'newstarter/uploads/planes/1581525077844_Peak_planes.csv')
+
+weather <- S3R::s3.read_using(FUN = read.csv,
+                             bucket = 'kilimanjaro-prod-datalake',
+                             object_path = 'newstarter/uploads/weather/1581525070376_Peak_weather.csv')
+```
+
+
+# Number of flights
+
+## Building a barchart from scratch using ggplot2
+
+```{r , echo=FALSE, dpi=300, fig.retina=1}
+# Summarise how many flights there are each month (using dplyr)
+df <- flights %>%
+  group_by(month) %>%
+  summarise(n_flights = n()) %>%
+  ungroup() %>%
+  mutate(month = as.factor(month))
+```
+
+There is a total of `r paste0(round(nrow(flights)/1000, digits = 1), 'k')` flights included in the data set. The chart below shows the total number of flights each month across all airlines. There is a relatively consistent number of flights each month, with the average monthly number of flights being `r paste0(round(mean(df$n_flights) / 1000, digits = 1), 'k')`.
+
+```{r , echo=FALSE, dpi=300, fig.retina=1}
+# Create a Peak themed chart from scratch using ggplot2
+## ggplot() - here you define the data needed for the chart and what the x,y,fill etc. should be
+## geom_col() - this declares that you want to make a bar chart
+## fill = peaktheme:::peak_fa[1] - this changes the bars to a colour in the Peak palette
+## scale_y_continuous(labels = ...) - this edits the y axis; nicely formatted the large numbers
+## labs(x = 'Month', y = 'No. of flights') - changes the axis labels; make sure they are readable!
+## theme_peak() - this will standardise the way the chart looks so that it is Peak-ified
+## theme(text = element_text(family = "TeX Gyre Heros")) - this sets the right font for the chart
+
+ggplot(data = df, aes(x = month, y = n_flights)) +
+  geom_col(fill = peaktheme:::peak_fa[1]) +
+  scale_y_continuous(labels = function(x) paste0(x/1000, 'k')) +
+  labs(x = 'Month', y = 'No. of flights') +
+  theme_peak() +
+  theme(text = element_text(family = "TeX Gyre Heros"))
+```
+
+## Building a barchart using the barchart function in peaktheme
+
+The chart below is the exact same as the one above! You can see it's also added in text annotations on the barchart which is nice.
+
+```{r , echo=FALSE, message = FALSE, dpi=300, fig.retina=1}
+# Create a Peak themed chart using the barchart function in peaktheme
+## It's only 1 line but makes the same as above!
+barchart(data_frame = df, x = 'month', y = 'n_flights', y_label = 'No. flights')
+```
+
+\newpage
+
+## Building a linechart from scratch using ggplot2
+
+Fancy making a line chart instead? This is how you make one from scratch in ggplot2.
+
+```{r , echo=FALSE, dpi=300, fig.retina=1}
+# Create a Peak themed chart from scratch using ggplot2
+## ggplot() - here you define the data needed for the chart and what the x,y,fill etc. should be
+## For a line chart, add group = 1 if you have 1 line (it just freaks out otherwise)
+## geom_line() - this declares that you want to make a line chart
+## colour = peaktheme:::peak_fa[1] - this changes the line to a colour in the Peak palette
+## scale_y_continuous(labels = ...) - this edits the y axis; nicely formatted the large numbers
+## labs(x = 'Month', y = 'No. of flights') - changes the axis labels; make sure they are readable!
+## theme_peak() - this will standardise the way the chart looks so that it is Peak-ified
+## theme(text = element_text(family = "TeX Gyre Heros")) - this sets the right font for the chart
+
+ggplot(data = df, aes(x = month, y = n_flights, group = 1)) +
+  geom_line(colour = peaktheme:::peak_fa[1]) +
+  scale_y_continuous(labels = function(x) paste0(x/1000, 'k')) +
+  labs(x = 'Month', y = 'No. of flights') +
+  theme_peak() +
+  theme(text = element_text(family = "TeX Gyre Heros"))
+```
+
+## Building a line chart using linechart function in peaktheme
+
+The chart below is the exact same as the one above! You can see the y-axis starts from 0; in some instances you may need to manually change this though by adding limits on the y-axis using `scale_y_continous(limits = ...)`.
+
+```{r , echo=FALSE, message = FALSE, dpi=300, fig.retina=1}
+# Create a Peak themed chart using the linechart function in peaktheme
+## It's only 1 line but makes the same as above!
+linechart(data_frame = df, x = 'month', y = 'n_flights', y_label = 'No. flights')
+```
+
+\newpage
+
+# Number of flights by airline
+
+United Airlines would like to see how their number of flights varies vs. their two main competitors, JetBlue Airways and ExpressJet Airlines.
+
+## Bar chart example (ggplot2 from scratch)
+
+```{r , echo=FALSE, dpi=300, fig.retina=1}
+# Summarise how many flights there are each month by airline (using dplyr)
+df2 <- flights %>%
+  left_join(airlines, by = 'carrier') %>%
+  filter(name %in% c('United Air Lines Inc.', 'JetBlue Airways', 'ExpressJet Airlines Inc.')) %>%
+  group_by(month, name) %>%
+  summarise(n_flights = n()) %>%
+  ungroup() %>%
+  mutate(month = as.factor(month))
+```
+
+The chart below shows the monthly number of flights by airline. `ggplot2` is weird and the legend looks pretty horrible as a default when you knit the file!
+
+```{r , echo=FALSE, dpi=300, fig.retina=1, fig.height = 3.5}
+# Create a Peak themed chart from scratch using ggplot2
+## ggplot() - here you define the data needed for the chart and what the x,y,fill etc. should be
+## geom_col() - this declares that you want to make a bar chart
+## position = 'dodge' - this puts the bars side by side, rather than stacking them
+## scale_fill_peak() - this makes sure the bars are in the Peak colour palette
+## scale_y_continuous(labels = ...) - this edits the y axis; nicely formatted the large numbers
+## labs(x = 'Month', y = 'No. of flights') - changes the axis labels; make sure they are readable!
+## theme_peak() - this will standardise the way the chart looks so that it is Peak-ified
+## theme(text = element_text(family = "TeX Gyre Heros")) - this sets the right font for the chart
+
+ggplot(data = df2, aes(x = month, y = n_flights, fill = name)) +
+  geom_col(position = 'dodge') +
+  scale_fill_peak() +
+  scale_y_continuous(labels = function(x) paste0(x/1000, 'k')) +
+  labs(x = 'Month', y = 'No. of flights', fill = 'Airline') +
+  theme_peak() +
+  theme(text = element_text(family = "TeX Gyre Heros"))
+```
+
+## Barchart example (using peaktheme)
+
+The chart below is the exact same as the one above. It's also formatted the legend so that the labels don't overlap. The text annotations on top of the bar has been turned off so it doesn't look too cluttered.
+
+```{r , echo=FALSE, message = FALSE, dpi=300, fig.retina=1, fig.height = 3.5}
+# Create a Peak themed chart using the barchart function in peaktheme
+## It's only 1 line but makes the same as above!
+barchart(data_frame = df2, x = 'month', y = 'n_flights', group = 'name',
+         y_label = 'No. flights', group_label = 'Airline', text = FALSE)
+```
+
+\newpage
+
+## Linechart from scratch using ggplot2
+
+This is how you would make the line chart from scratch in ggplot2. As you can see, the legend looks rubbish again.
+
+```{r , echo=FALSE, dpi=300, fig.retina=1}
+# Create a Peak themed chart from scratch using ggplot2
+## ggplot() - here you define the data needed for the chart and what the x,y,fill etc. should be
+## group = name - this specifies which data points need to be joined by a line
+## colour = name - this has been added to colour the lines in different colours!
+## geom_line() - this declares that you want to make a line chart
+## scale_colour_peak() - this makes sure the colours used are in the Peak palette
+## scale_y_continuous(labels = ...) - this edits the y axis; nicely formatted the large numbers
+## labs(x = 'Month', y = 'No. of flights') - changes the axis labels; make sure they are readable!
+## theme_peak() - this will standardise the way the chart looks so that it is Peak-ified
+## theme(text = element_text(family = "TeX Gyre Heros")) - this sets the right font for the chart
+
+ggplot(data = df2, aes(x = month, y = n_flights, group = name, colour = name)) +
+  geom_line() +
+  scale_colour_peak() +
+  scale_y_continuous(labels = function(x) paste0(x/1000, 'k')) +
+  labs(x = 'Month', y = 'No. of flights', colour = 'Airline') +
+  theme_peak() +
+  theme(text = element_text(family = "TeX Gyre Heros"))
+```
+
+## Linechart using peaktheme
+
+The chart below is the exact same as the one above! You can see the y-axis starts from 0; in some instances you may need to manually change this though by adding limits on the y-axis using `scale_y_continous(limits = ...)`.
+
+```{r , echo=FALSE, message = FALSE, dpi=300, fig.retina=1}
+# Create a Peak themed chart using the linechart function in peaktheme
+## It's only 1 line but makes the same as above!
+linechart(data_frame = df2, x = 'month', y = 'n_flights', group = 'name',
+          y_label = 'No. flights', group_label = 'Airline')
+```
