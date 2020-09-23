@@ -5,3 +5,5 @@
 .png
 .pdf
 .log
+.ipynb_checkpoints
+.ipynb_checkpoints/
