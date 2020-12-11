@@ -104,7 +104,11 @@ glimpse(transactions)
 You can also run entire SQL scripts in R if you have a complex query you'd like to run.
 
 ```{r }
-# Add in read file SQL stuff here
+# Read in a SQL file
+query <- readr::read_file('~/ds-newstarter/r-tutorial/transactions.sql')
+
+# Use dbGetQuery if you'd like to retrieve data, or dbSendQuery if you won't need to read data in
+transactions <- dbGetQuery(con, query)
 ```
 
 ## Data transformation using dplyr
