@@ -30,7 +30,7 @@ flights <- S3R::s3.read_using(FUN = readr::read_csv,
 
 # * Load weather, planes, airlines, airports data into R as well. Clicking on the file and using 
 # "Copy Path" can help with long paths.
-
+# The airlines file is available at: kilimanjaro-prod-datalake/newstarter/datascience/file_upload/airlines.csv
 
 #### Write data up to S3. 
 # Data Scientists are only allowed to write into the datascience subfolder for each customer
