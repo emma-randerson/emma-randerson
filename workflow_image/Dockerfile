@@ -3,7 +3,7 @@ FROM python:3.7
 ARG GITHUB_TOKEN
 
 RUN pip install --no-cache-dir --upgrade pip setuptools \
-    && pip install --no-cache-dir git+https://$GITHUB_TOKEN@github.com/PeakBI/orion.git@0.5.3#egg=orion
+    && pip install git+https://$GITHUB_TOKEN@github.com/PeakBI/orion.git@0.5.2post1#egg=orion
 
 ARG STAGE
 ARG TENANT
@@ -21,5 +21,9 @@ ENV STAGE=$STAGE\
     REDSHIFT_IAM_ROLE=$REDSHIFT_IAM_ROLE
     
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    && rm requirements.txt
+RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/" \
+    && python3 -m pip install --no-cache-dir --upgrade "pip<21.0" setuptools wheel \
+    && python3 -m pip install --no-cache-dir --use-deprecated=legacy-resolver -r requirements.txt \
+    && rm requirements.txt \
+    # makes sure github_token isn't saved in the config
+    && git config --global --unset url."https://${GITHUB_TOKEN}@github.com/".insteadOf
