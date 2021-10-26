@@ -1,0 +1,60 @@
+# <Tenant> <Solution> Dashboard
+
+Short one liner description of the App.
+
+This git repo contains the Shiny app for the <Tenant> <Solution> Dashboard. The link to the app is live [here](copy the apps url here)
+
+
+Its main purpose is to:
+ - list the customer requirements of the dashboard here
+
+
+**Data Scientists:**
+
+* list the relevant data scientists
+
+**Customer Success:**
+
+* list the relevant data CS
+
+
+
+## Directory Structure
+The directory structure is as follows:
+
+* `content` - A place to store all code to run the app. `app.R` contains the app.
+* list any further folders and files
+
+
+
+
+# Wiki
+
+If a wiki is written for the app, copy the link to it here
+
+
+# Data
+
+* `table_name` - List the data which sits behind the dashboard. Name each table, including the s3 or Redshift path. Then link the tables to the corresponding UI (table / plot / inputs) they populate.
+
+## Orchestrations
+
+* `orchestration_1` - Transforming raw data into time series of transactions for each product. Include the github link to the script
+
+## Process Flow
+
+![process flow](https://user-images.githubusercontent.com/17754004/68019591-1fc6ea80-fc94-11e9-970a-4d71281b91eb.png)
+
+
+# Deployment
+
+The dashboard is deployed on AIS as a WebApp.
+
+## Beta
+beta: This is a beta dashboard, where changes and testing is done. It lives on the beta branch. Once testing is completed, a pull request is made to the master branch, to update the prod dashboard.
+
+For saving files, if the dashboard variable in the `app.R` file is set to `dashboard = beta` then the s3 files are saved to `/beta` folders on s3. This prevents testing on the beta dashboard contaminating data the master dashboard points to.
+
+## Prod
+dashboard name: This is the dashboard customer uses. It lives on the master branch
+
